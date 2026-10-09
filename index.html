@@ -1,0 +1,610 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>Audio / QR</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fff;
+      --fg: #111;
+      --muted: #707070;
+      --line: #dedede;
+      --soft: #f5f5f5;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font-family: Inter, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    header, main, footer {
+      width: min(100% - 36px, 960px);
+      margin-inline: auto;
+    }
+
+    header {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .logo {
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+
+    .top-label {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    main { padding-block: 60px 76px; }
+
+    .eyebrow {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--muted);
+    }
+
+    h1 {
+      margin: 14px 0;
+      font-size: clamp(38px, 8vw, 72px);
+      line-height: .98;
+      letter-spacing: -4px;
+    }
+
+    .intro {
+      max-width: 560px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 15px;
+      margin-bottom: 38px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      padding: 24px;
+      border-radius: 4px;
+    }
+
+    h2 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      letter-spacing: -.7px;
+    }
+
+    .description {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      min-height: 42px;
+    }
+
+    .drop {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 160px;
+      margin: 20px 0 12px;
+      padding: 20px;
+      text-align: center;
+      background: var(--soft);
+      border: 1px dashed #bdbdbd;
+      cursor: pointer;
+    }
+
+    .drop:hover { border-color: #111; }
+
+    .drop strong { font-size: 14px; }
+
+    .drop small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    input[type="file"] {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      font-size: 12px;
+    }
+
+    button, .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 11px 15px;
+      border: 1px solid var(--fg);
+      background: var(--fg);
+      color: #fff;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    button:hover, .button:hover {
+      background: #333;
+    }
+
+    button.secondary {
+      background: #fff;
+      color: #111;
+    }
+
+    button.secondary:hover { background: var(--soft); }
+
+    button:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .output {
+      min-height: 180px;
+      margin-top: 20px;
+      padding: 16px;
+      background: var(--soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    #qr canvas, #qr img {
+      display: block;
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      image-rendering: pixelated;
+    }
+
+    .placeholder {
+      max-width: 220px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--muted);
+      overflow-wrap: anywhere;
+    }
+
+    .status.error { color: #b00020; }
+    .status.success { color: #176b35; }
+
+    audio {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+    }
+
+    .note {
+      margin-top: 30px;
+      border-top: 1px solid var(--line);
+      padding-top: 18px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    footer {
+      border-top: 1px solid var(--line);
+      padding-block: 22px;
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    @media (max-width: 680px) {
+      main { padding-top: 42px; }
+      h1 { letter-spacing: -2.5px; }
+      .grid { grid-template-columns: 1fr; }
+      .panel { padding: 19px; }
+      .description { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">AUDIO / QR.</div>
+    <div class="top-label">FREE TOOL · NO ACCOUNT</div>
+  </header>
+
+  <main>
+    <div class="eyebrow">Simple utility / 001</div>
+    <h1>Sound.<br>In a square.</h1>
+    <p class="intro">
+      Преобразуй короткий аудиофайл в QR-код или распознай QR,
+      чтобы восстановить аудио. Всё выполняется в браузере.
+    </p>
+
+    <div class="grid">
+      <section class="panel">
+        <h2>01 / Аудио → QR</h2>
+        <p class="description">
+          Выбери небольшой аудиофайл. Его данные будут закодированы
+          непосредственно в QR, без загрузки на сервер.
+        </p>
+
+        <label class="drop" for="audioFile">
+          <strong>Выбрать аудиофайл</strong>
+          <small>MP3, WAV, OGG и другие поддерживаемые форматы</small>
+          <input id="audioFile" type="file" accept="audio/*">
+        </label>
+
+        <div class="actions">
+          <button id="generate" disabled>Создать QR</button>
+          <button id="test" class="secondary">Тестировать сразу</button>
+        </div>
+
+        <div id="qr" class="output">
+          <div class="placeholder">QR-код появится здесь</div>
+        </div>
+
+        <div class="actions">
+          <button id="download" class="secondary" disabled>
+            Скачать QR PNG
+          </button>
+        </div>
+
+        <div id="genStatus" class="status" aria-live="polite">
+          Файл ещё не выбран.
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>02 / QR → Аудио</h2>
+        <p class="description">
+          Загрузи изображение QR-кода. Если в нём содержится
+          аудио в формате Data URL, сайт попробует его воспроизвести.
+        </p>
+
+        <label class="drop" for="qrFile">
+          <strong>Выбрать изображение QR</strong>
+          <small>PNG, JPG, WEBP</small>
+          <input id="qrFile" type="file" accept="image/*">
+        </label>
+
+        <div class="actions">
+          <button id="decode">Распознать QR</button>
+        </div>
+
+        <div id="decodeStatus" class="status" aria-live="polite">
+          Ожидается изображение QR-кода.
+        </div>
+
+        <audio id="player" controls hidden></audio>
+
+        <div id="decodedLink" class="actions"></div>
+      </section>
+    </div>
+
+    <div class="note">
+      <strong>Ограничение:</strong> один QR-код вмещает лишь небольшой
+      объём данных. Для обычного аудио MP3 или WAV лимит достигается
+      очень быстро. Если файл не помещается, используй QR со ссылкой
+      на файл или разбивай данные на несколько QR-кодов.
+      <br>
+      <strong>Приватность:</strong> этот сайт не загружает файлы
+      на собственный сервер. Для работы QR-библиотек требуется
+      подключение к интернету.
+    </div>
+  </main>
+
+  <footer>
+    <span>AUDIO / QR.</span>
+    <span>Minimal by design.</span>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+
+  <script>
+    const audioFile = document.getElementById("audioFile");
+    const generateBtn = document.getElementById("generate");
+    const testBtn = document.getElementById("test");
+    const downloadBtn = document.getElementById("download");
+    const qrBox = document.getElementById("qr");
+    const genStatus = document.getElementById("genStatus");
+    const qrFile = document.getElementById("qrFile");
+    const decodeBtn = document.getElementById("decode");
+    const decodeStatus = document.getElementById("decodeStatus");
+    const player = document.getElementById("player");
+    const decodedLink = document.getElementById("decodedLink");
+
+    // Консервативный лимит, чтобы QR-библиотека не падала
+    // на слишком длинном содержимом.
+    const MAX_QR_CHARS = 2200;
+
+    let selectedFile = null;
+    let currentDataUrl = null;
+
+    function setStatus(element, message, type = "") {
+      element.textContent = message;
+      element.className = "status " + type;
+    }
+
+    function showPlaceholder(message) {
+      qrBox.innerHTML = "";
+      const div = document.createElement("div");
+      div.className = "placeholder";
+      div.textContent = message;
+      qrBox.appendChild(div);
+    }
+
+    audioFile.addEventListener("change", () => {
+      selectedFile = audioFile.files[0] || null;
+      generateBtn.disabled = !selectedFile;
+
+      if (selectedFile) {
+        setStatus(
+          genStatus,
+          selectedFile.name + " · " +
+          (selectedFile.size / 1024).toFixed(1) + " KB"
+        );
+      } else {
+        setStatus(genStatus, "Файл ещё не выбран.");
+      }
+    });
+
+    function createQR(data) {
+      if (typeof QRCode === "undefined") {
+        throw new Error("Не удалось загрузить QR-библиотеку. Проверь интернет.");
+      }
+
+      if (data.length > MAX_QR_CHARS) {
+        throw new Error(
+          "Данные слишком большие для этого демо: " +
+          data.length + " символов. Лимит интерфейса — " +
+          MAX_QR_CHARS + ". Выбери более короткий файл."
+        );
+      }
+
+      qrBox.innerHTML = "";
+
+      new QRCode(qrBox, {
+        text: data,
+        width: 240,
+        height: 240,
+        colorDark: "#000000",
+        colorLight: "#ffffff",
+        correctLevel: QRCode.CorrectLevel.L
+      });
+
+      currentDataUrl = data;
+      downloadBtn.disabled = false;
+
+      setStatus(genStatus, "QR создан. Можно скачать изображение.", "success");
+    }
+
+    function fileToDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = () => reject(new Error("Не удалось прочитать файл."));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    generateBtn.addEventListener("click", async () => {
+      if (!selectedFile) return;
+
+      try {
+        if (!selectedFile.type.startsWith("audio/")) {
+          throw new Error("Выбери аудиофайл.");
+        }
+
+        setStatus(genStatus, "Подготовка данных…");
+        const dataUrl = await fileToDataUrl(selectedFile);
+        createQR(dataUrl);
+      } catch (error) {
+        setStatus(genStatus, error.message, "error");
+        downloadBtn.disabled = true;
+      }
+    });
+
+    // Генерирует короткий WAV-сигнал прямо в браузере для проверки.
+    function makeTestWav() {
+      const sampleRate = 4000;
+      const duration = 0.12;
+      const samples = Math.floor(sampleRate * duration);
+      const buffer = new ArrayBuffer(44 + samples * 2);
+      const view = new DataView(buffer);
+
+      function writeText(offset, text) {
+        for (let i = 0; i < text.length; i++) {
+          view.setUint8(offset + i, text.charCodeAt(i));
+        }
+      }
+
+      writeText(0, "RIFF");
+      view.setUint32(4, 36 + samples * 2, true);
+      writeText(8, "WAVE");
+      writeText(12, "fmt ");
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, 1, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * 2, true);
+      view.setUint16(32, 2, true);
+      view.setUint16(34, 16, true);
+      writeText(36, "data");
+      view.setUint32(40, samples * 2, true);
+
+      for (let i = 0; i < samples; i++) {
+        const fade = Math.min(1, i / 40, (samples - i) / 40);
+        const value = Math.sin(2 * Math.PI * 660 * i / sampleRate)
+          * 12000 * Math.max(0, fade);
+        view.setInt16(44 + i * 2, value, true);
+      }
+
+      let binary = "";
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+
+      return "data:audio/wav;base64," + btoa(binary);
+    }
+
+    testBtn.addEventListener("click", () => {
+      try {
+        createQR(makeTestWav());
+      } catch (error) {
+        setStatus(genStatus, error.message, "error");
+      }
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const canvas = qrBox.querySelector("canvas");
+
+      if (canvas) {
+        const link = document.createElement("a");
+        link.download = "audio-qr.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
+        return;
+      }
+
+      const image = qrBox.querySelector("img");
+      if (image && image.src) {
+        const link = document.createElement("a");
+        link.download = "audio-qr.png";
+        link.href = image.src;
+        link.click();
+      }
+    });
+
+    qrFile.addEventListener("change", () => {
+      if (qrFile.files[0]) {
+        setStatus(decodeStatus, qrFile.files[0].name);
+      }
+    });
+
+    decodeBtn.addEventListener("click", async () => {
+      const file = qrFile.files[0];
+
+      if (!file) {
+        setStatus(decodeStatus, "Сначала выбери изображение QR.", "error");
+        return;
+      }
+
+      if (typeof jsQR === "undefined") {
+        setStatus(decodeStatus, "Не удалось загрузить декодер QR.", "error");
+        return;
+      }
+
+      try {
+        setStatus(decodeStatus, "Распознавание…");
+        decodedLink.innerHTML = "";
+        player.hidden = true;
+        player.removeAttribute("src");
+        player.load();
+
+        const imageUrl = URL.createObjectURL(file);
+
+        try {
+          const img = new Image();
+          img.src = imageUrl;
+
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = () => reject(new Error("Не удалось открыть изображение."));
+          });
+
+          const canvas = document.createElement("canvas");
+          canvas.width = img.naturalWidth;
+          canvas.height = img.naturalHeight;
+
+          const context = canvas.getContext("2d", {
+            willReadFrequently: true
+          });
+
+          context.drawImage(img, 0, 0);
+          const pixels = context.getImageData(
+            0, 0, canvas.width, canvas.height
+          );
+
+          const result = jsQR(
+            pixels.data, pixels.width, pixels.height
+          );
+
+          if (!result) {
+            throw new Error("QR-код не найден. Попробуй более чёткое изображение.");
+          }
+
+          const data = result.data;
+
+          if (data.startsWith("data:audio/")) {
+            player.src = data;
+            player.hidden = false;
+            setStatus(decodeStatus, "Аудио восстановлено из QR.", "success");
+          } else if (/^https?:\/\//i.test(data)) {
+            setStatus(
+              decodeStatus,
+              "QR содержит ссылку, а не аудиофайл. Можно открыть её ниже.",
+              "success"
+            );
+
+            const link = document.createElement("a");
+            link.href = data;
+            link.target = "_blank";
+            link.rel = "noopener noreferrer";
+            link.className = "button";
+            link.textContent = "Открыть ссылку";
+            decodedLink.appendChild(link);
+          } else {
+            setStatus(
+              decodeStatus,
+              "QR распознан, но не содержит аудио или ссылку. Первые данные: " +
+              data.slice(0, 180),
+              "error"
+            );
+          }
+        } finally {
+          URL.revokeObjectURL(imageUrl);
+        }
+      } catch (error) {
+        setStatus(decodeStatus, error.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>
